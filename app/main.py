@@ -1,5 +1,6 @@
 import socket
 import threading
+from time import time
 
 store = {}
 
@@ -30,12 +31,22 @@ def handle_connection(client_socket: socket.socket):
                 case "SET":
                     key = tokens[4]
                     value = tokens[6]
-                    store[key] = value
+                    expiry = None
+
+                    # set expirty if exists PX
+                    if len(tokens) > 8:
+                        expiry = int(tokens[10]) + int(time() * 1000)
+
+                    store[key] = (value, expiry)
                     client_socket.send(bytes("+OK\r\n", "utf-8"))
                 case "GET":
                     key = tokens[4]
-                    response = store[key]
-                    client_socket.send(bytes(f"${len(response)}\r\n{response}\r\n", "utf-8"))
+                    value, expiry = store[key]
+
+                    if expiry is None or time() * 1000 < expiry:
+                        client_socket.send(bytes(f"${len(value)}\r\n{value}\r\n", "utf-8"))
+                    else:
+                        client_socket.send(bytes("$-1\r\n", "utf-8"))
 
         except ConnectionError:
             break

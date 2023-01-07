@@ -1,6 +1,8 @@
 import socket
 import threading
 
+store = {}
+
 
 def main():
     print("Logs from your program will appear here!")
@@ -15,12 +17,25 @@ def handle_connection(client_socket: socket.socket):
     while True:
         try:
             message = client_socket.recv(1024)
+            if not message:
+                break
+
             tokens = message.decode().split("\r\n")
 
-            if len(tokens) > 1 and tokens[2].upper() == "ECHO":
-                client_socket.send(f"+{tokens[4]}".encode())
-            else:
-                client_socket.send(b"+PONG\r\n")
+            match tokens[2].upper():
+                case "PING":
+                    client_socket.send(bytes("+PONG\r\n", "utf-8"))
+                case "ECHO":
+                    client_socket.send(bytes(f"+{tokens[4]}", "utf-8"))
+                case "SET":
+                    key = tokens[4]
+                    value = tokens[6]
+                    store[key] = value
+                    client_socket.send(bytes("+OK\r\n", "utf-8"))
+                case "GET":
+                    key = tokens[4]
+                    response = store[key]
+                    client_socket.send(bytes(f"${len(response)}\r\n{response}\r\n", "utf-8"))
 
         except ConnectionError:
             break

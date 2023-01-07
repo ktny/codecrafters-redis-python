@@ -17,7 +17,7 @@ def handle_connection(client_socket: socket.socket):
             message = client_socket.recv(1024)
             tokens = message.decode().split("\r\n")
 
-            if tokens[2].upper() == "ECHO":
+            if len(tokens) > 1 and tokens[2].upper() == "ECHO":
                 client_socket.send(f"+{tokens[4]}".encode())
             else:
                 client_socket.send(b"+PONG\r\n")

@@ -1,17 +1,23 @@
-# Uncomment this to pass the first stage
 import socket
+import threading
 
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
-    # Uncomment this to pass the first stage
-    #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
-    client_socket, _ = server_socket.accept()  # wait for client
-    while client_socket.recv(1024):
-        client_socket.send(b"+PONG\r\n")
+    while True:
+        client_socket, _ = server_socket.accept()  # wait for client
+        threading.Thread(target=handle_connection, args=(client_socket,)).start()
+
+
+def handle_connection(client_connection: socket.socket):
+    while True:
+        try:
+            client_connection.recv(1024)
+            client_connection.send(b"+PONG\r\n")
+        except ConnectionError:
+            break
 
 
 if __name__ == "__main__":
